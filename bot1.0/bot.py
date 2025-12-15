@@ -1,16 +1,31 @@
 import json, os, time
 from datetime import datetime
+import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 
 # ---------- CONFIG ----------
-BOT_TOKEN = "8243755667:AAHrpxZ9SgIALolf04E23CYmMlIpVHXW3ZQ"
+BOT_TOKEN = "8243755667:AAHrpxZ9SgIALolf04E23CYmMlIpVHXW3ZQ"  # ganti dengan tokenmu
 DB_PRODUK = "produk.json"
 DB_ORDER = "orders.json"
 DB_LOG = "log.json"
 DB_ADMINS = "admins.json"
 BACKUP_INTERVAL = 50
 
+# ---------- LOGGING ----------
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
+# ---------- DATABASE ----------
 def load_db(file):
     if not os.path.exists(file):
         return {} if file != DB_ADMINS else []
@@ -35,6 +50,7 @@ def backup_data():
         if os.path.exists(f):
             os.replace(f, f"{f}.backup_{int(time.time())}")
 
+# ---------- HANDLER COMMAND ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db = load_db(DB_PRODUK)
     if not db:
@@ -47,6 +63,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
 
+async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    admins = load_db(DB_ADMINS)
+    if update.message.from_user.id not in admins:
+        await update.message.reply_text("❌ Kamu bukan admin!")
+        return
+    kb = [
+        [InlineKeyboardButton("🛠 Produk", callback_data="MENU_PROD")],
+        [InlineKeyboardButton("📦 Stok", callback_data="MENU_STOK")],
+        [InlineKeyboardButton("✅ Verifikasi Order", callback_data="MENU_VERIF")],
+        [InlineKeyboardButton("📋 List Produk", callback_data="MENU_LIST")]
+    ]
+    await update.message.reply_text(
+        "🛠 *ADMIN PANEL*",
+        reply_markup=InlineKeyboardMarkup(kb),
+        parse_mode="Markdown"
+    )
+
+# ---------- HANDLER CALLBACK ----------
 async def view_produk(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -74,6 +108,7 @@ async def order_produk(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def upload_bukti(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     if "order_produk" not in context.user_data:
+        await update.message.reply_text("❌ Tidak ada pesanan yang aktif.")
         return
     file_id = None
     if update.message.photo:
@@ -106,65 +141,31 @@ async def upload_bukti(update: Update, context: ContextTypes.DEFAULT_TYPE):
             text=f"📌 Bukti baru dari user {user_id} untuk produk {name}"
         )
 
-async def admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    admins = load_db(DB_ADMINS)
-    if update.message.from_user.id not in admins:
-        return
-    kb = [
-        [InlineKeyboardButton("🛠 Produk", callback_data="MENU_PROD")],
-        [InlineKeyboardButton("📦 Stok", callback_data="MENU_STOK")],
-        [InlineKeyboardButton("✅ Verifikasi Order", callback_data="MENU_VERIF")],
-        [InlineKeyboardButton("📋 List Produk", callback_data="MENU_LIST")]
-    ]
-    await update.message.reply_text(
-        "🛠 *ADMIN PANEL*",
-        reply_markup=InlineKeyboardMarkup(kb),
-        parse_mode="Markdown"
-    )
-
-async def send_back_to_admin(query, text=""):
-    kb = [[InlineKeyboardButton("⬅️ Kembali", callback_data="ADMIN_MENU")]]
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(kb), parse_mode="Markdown")
-
 async def admin_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     data = query.data
-    db = load_db(DB_PRODUK)
-    orders = load_db(DB_ORDER)
-    admins = load_db(DB_ADMINS)
-
     if data == "ADMIN_MENU":
         await admin(update, context)
         return
+    # Callback lain bisa ditambahkan sesuai kebutuhan
+    await query.edit_message_text(f"Kamu menekan tombol: {data}")
 
+# ---------- JALANKAN BOT ----------
 if __name__ == "__main__":
-    # Membuat aplikasi bot
+    print("Memulai bot...")
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     # Command handler
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("admin", admin))
 
-    # Callback query handler untuk tombol
+    # Callback query handler
     app.add_handler(CallbackQueryHandler(admin_cb))
     app.add_handler(CallbackQueryHandler(view_produk, pattern=r"^VIEW\|"))
     app.add_handler(CallbackQueryHandler(order_produk, pattern=r"^ORDER\|"))
 
-    # Message handler untuk upload bukti pembayaran
+    # Upload bukti
     app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, upload_bukti))
 
-    print("Bot sedang dijalankan...")
     app.run_polling()
-
-
-    # — Pengelolaan produk, stok, verifikasi sama script 2.0 di atas
-    # (Kode lengkapnya sudah disiapkan sama struktur wizard yang sama)
-
-    # ... (kode callback lengkap tidak berubah, under the hood)
-
-    # Pastikan callback lain dilanjutkan dari kode wizard 2.0 di atas
-
-# — Handler utama, sama seperti yang sudah disiapkan di versi 2.0
-# Tambahkan semua handler sesuai kebutuhan
-
