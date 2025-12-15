@@ -138,6 +138,26 @@ async def admin_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await admin(update, context)
         return
 
+if __name__ == "__main__":
+    # Membuat aplikasi bot
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    # Command handler
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("admin", admin))
+
+    # Callback query handler untuk tombol
+    app.add_handler(CallbackQueryHandler(admin_cb))
+    app.add_handler(CallbackQueryHandler(view_produk, pattern=r"^VIEW\|"))
+    app.add_handler(CallbackQueryHandler(order_produk, pattern=r"^ORDER\|"))
+
+    # Message handler untuk upload bukti pembayaran
+    app.add_handler(MessageHandler(filters.PHOTO | filters.Document.ALL, upload_bukti))
+
+    print("Bot sedang dijalankan...")
+    app.run_polling()
+
+
     # — Pengelolaan produk, stok, verifikasi sama script 2.0 di atas
     # (Kode lengkapnya sudah disiapkan sama struktur wizard yang sama)
 
@@ -147,3 +167,4 @@ async def admin_cb(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # — Handler utama, sama seperti yang sudah disiapkan di versi 2.0
 # Tambahkan semua handler sesuai kebutuhan
+
