@@ -1,1 +1,65 @@
+import json
+import os
+
+DB_PRODUK = "produk.json"
+
+# Daftar produk tanpa tanda khusus
+produk_list = [
+    "Alight Motion",
+    "Apple Music",
+    "Beauty Plus",
+    "Balckbox Ai",
+    "Brainly",
+    "Bstation",
+    "Canva",
+    "Capcut",
+    "Chatgpt",
+    "Crunchyroll",
+    "Disney+",
+    "Doulingo",
+    "Dramabox",
+    "Hbo",
+    "Ibis Paint",
+    "Iqiyi",
+    "Lightroom",
+    "Loklok",
+    "Meitu",
+    "Netflix",
+    "Photoroom",
+    "Picsart",
+    "Prime video",
+    "Spotify",
+    "Vidio",
+    "Viu",
+    "Wetv",
+    "Youtube",
+    "Zoom",
+    "MLBB",
+    "Roblox",
+    "Free Fire",
+    "Suntik All Sosmed",
+    "Nokos Telegram",
+    "Nokos Whatsapp"
+]
+
+# Contoh default durasi, harga, dan stok
+DEFAULT_DURASI = "3 hari"
+DEFAULT_HARGA = 50000
+DEFAULT_STOK = list(range(10))  # stok 10 item, pakai list 0-9
+
+# Generate dict produk
+produk_dict = {}
+for nama in produk_list:
+    produk_dict[nama] = {
+        "durasi": DEFAULT_DURASI,
+        "harga": DEFAULT_HARGA,
+        "stok": DEFAULT_STOK
+    }
+
+# Simpan ke produk.json
+with open(DB_PRODUK, "w") as f:
+    json.dump(produk_dict, f, indent=2, ensure_ascii=False)
+
+print(f"File {DB_PRODUK} berhasil dibuat dengan {len(produk_list)} produk.")
 {}
+
